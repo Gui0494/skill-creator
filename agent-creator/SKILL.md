@@ -275,25 +275,31 @@ Com base na análise, corrija os arquivos:
    - Expectation impossível? → Ajuste o test case
    - Falta de tratamento de edge case? → Adicione instrução
 
-Edite os arquivos necessários
+Edite os arquivos necessários.
 
-3. **Documente**: Adicione ao `context.json`:
-   ```json
-   {
-     "corrections": [
-       {
-         "iteration": 2,
-         "file": "SKILL.md",
-         "issue": "Instrução de formato de saída era ambígua",
-         "fix": "Adicionado template explícito na seção Output"
-       }
-     ]
-   }
-   ```
+### Passo 3: Documentar correções
 
-4. **Re-execute**: Volte à Fase 4 com a nova iteração
+Adicione ao `context.json`:
+```json
+{
+  "corrections": [
+    {
+      "iteration": 2,
+      "file": "SKILL.md",
+      "issue": "Instrução de formato de saída era ambígua",
+      "fix": "Adicionado template explícito na seção Output"
+    }
+  ]
+}
+```
 
-5. **Avalie progresso**: Se os mesmos testes continuam falhando após 3 iterações, peça ajuda ao usuário: "Não consegui corrigir automaticamente o problema X. Pode me ajudar?"
+### Passo 4: Re-executar testes
+
+Volte à Fase 4 com a nova iteração.
+
+### Passo 5: Avaliar progresso
+
+Se os mesmos testes continuam falhando após 3 iterações, peça ajuda ao usuário: "Não consegui corrigir automaticamente o problema X. Pode me ajudar?"
 
 ---
 

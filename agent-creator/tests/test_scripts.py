@@ -21,6 +21,7 @@ sys.path.insert(0, str(SCRIPTS_DIR))
 
 from validate_agent import parse_frontmatter, validate_frontmatter, validate_structure, validate_agent
 from preflight import check_python_version, check_disk_space, check_write_permission
+from auto_correct import classify_failure, analyze_failures
 
 
 # ─── Test helpers ────────────────────────────────────────────────────
@@ -354,6 +355,117 @@ def test_preflight_write_permission():
     return t
 
 
+# ─── auto_correct tests ──────────────────────────────────────────────
+
+def test_classify_failure_ambiguous():
+    t = TestResult("classify_failure: detects ambiguous instruction")
+    try:
+        cat, _ = classify_failure("The output was unclear and vague about the format")
+        assert cat == "ambiguous_instruction", f"Expected ambiguous_instruction, got {cat}"
+        t.passed = True
+    except Exception as e:
+        t.error = str(e)
+    return t
+
+
+def test_classify_failure_script_error():
+    t = TestResult("classify_failure: detects script error")
+    try:
+        cat, _ = classify_failure("Traceback (most recent call last): TypeError in main.py")
+        assert cat == "script_error", f"Expected script_error, got {cat}"
+        t.passed = True
+    except Exception as e:
+        t.error = str(e)
+    return t
+
+
+def test_classify_failure_missing_resource():
+    t = TestResult("classify_failure: detects missing resource")
+    try:
+        cat, _ = classify_failure("File references/guide.md not found")
+        assert cat == "missing_resource", f"Expected missing_resource, got {cat}"
+        t.passed = True
+    except Exception as e:
+        t.error = str(e)
+    return t
+
+
+def test_classify_failure_trigger():
+    t = TestResult("classify_failure: detects trigger failure")
+    try:
+        cat, _ = classify_failure("The skill was not used and skill not triggered")
+        assert cat == "trigger_failure", f"Expected trigger_failure, got {cat}"
+        t.passed = True
+    except Exception as e:
+        t.error = str(e)
+    return t
+
+
+def test_classify_failure_unknown():
+    t = TestResult("classify_failure: returns unknown for unrecognized evidence")
+    try:
+        cat, _ = classify_failure("Something completely different happened")
+        assert cat == "unknown", f"Expected unknown, got {cat}"
+        t.passed = True
+    except Exception as e:
+        t.error = str(e)
+    return t
+
+
+def test_analyze_failures_no_failures():
+    t = TestResult("analyze_failures: empty plan when all pass")
+    try:
+        results = {
+            "results": [
+                {"eval_id": 1, "passed": True, "expectations": [
+                    {"text": "Works", "verdict": "PASS", "evidence": "Yes"}
+                ]}
+            ]
+        }
+        plan = analyze_failures(results, "/nonexistent")
+        assert plan["total_failures"] == 0, f"Expected 0 failures, got {plan['total_failures']}"
+        assert len(plan["corrections"]) == 0, "Expected no corrections"
+        t.passed = True
+    except Exception as e:
+        t.error = str(e)
+    return t
+
+
+def test_analyze_failures_with_failures():
+    t = TestResult("analyze_failures: produces corrections for failed tests")
+    tmp = None
+    try:
+        tmp, agent_dir = create_temp_agent(
+            scripts={"helper.py": "#!/usr/bin/env python3\nprint('hi')\n"}
+        )
+        results = {
+            "results": [
+                {
+                    "eval_id": 1,
+                    "passed": False,
+                    "eval_name": "test-1",
+                    "expectations": [
+                        {"text": "Should produce output", "verdict": "FAIL",
+                         "evidence": "Script crashed with error traceback in helper.py"},
+                        {"text": "Format correct", "verdict": "PASS",
+                         "evidence": "OK"},
+                    ]
+                }
+            ]
+        }
+        plan = analyze_failures(results, str(agent_dir))
+        assert plan["total_failures"] == 1, f"Expected 1 failure, got {plan['total_failures']}"
+        assert "script_error" in plan["categories"], f"Expected script_error category, got {plan['categories']}"
+        assert len(plan["corrections"]) > 0, "Expected at least one correction"
+        t.passed = True
+    except Exception as e:
+        t.error = str(e)
+    finally:
+        if tmp:
+            shutil.rmtree(tmp, ignore_errors=True)
+    return t
+
+
 # ─── Test runner ─────────────────────────────────────────────────────
 
 ALL_TESTS = [
@@ -381,6 +493,14 @@ ALL_TESTS = [
     test_preflight_python_version_future,
     test_preflight_disk_space,
     test_preflight_write_permission,
+    # auto_correct
+    test_classify_failure_ambiguous,
+    test_classify_failure_script_error,
+    test_classify_failure_missing_resource,
+    test_classify_failure_trigger,
+    test_classify_failure_unknown,
+    test_analyze_failures_no_failures,
+    test_analyze_failures_with_failures,
 ]
 
 
