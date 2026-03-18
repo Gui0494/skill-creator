@@ -35,7 +35,7 @@ cli_bridge.py --<action>
 python3 agent-creator/scripts/cli_bridge.py --<action>
 ```
 
-**Actions disponíveis:** `--create`, `--validate`, `--test`, `--status`, `--report`, `--preflight`
+**Actions disponíveis:** `--create`, `--validate`, `--test`, `--analyze`, `--status`, `--report`, `--preflight`
 
 ---
 
@@ -52,6 +52,10 @@ Valida a estrutura de um agente existente (SKILL.md, frontmatter, arquivos).
 ### --test
 
 Roda testes automatizados em um agente existente (with_skill vs baseline).
+
+### --analyze
+
+Analisa falhas nos testes e sugere correcoes. Classifica cada falha em categorias (missing_resource, ambiguous_instruction, script_error, etc.) e mapeia para os arquivos afetados.
 
 ### --status
 
@@ -114,6 +118,21 @@ Verifica se o ambiente tem tudo necessario (Python, Claude CLI, disk space, perm
   }
 }
 ```
+
+### analyze
+
+```json
+{
+  "action": "analyze",
+  "agent_path": "./agents/design-agent",
+  "workspace_path": "./agents/design-agent-workspace",
+  "options": {
+    "iteration": 1
+  }
+}
+```
+
+Omit `iteration` to auto-detect the latest.
 
 ### status
 
@@ -220,6 +239,40 @@ python3 agent-creator/scripts/cli_bridge.py --preflight < /dev/null
     "references/design-patterns.md"
   ],
   "errors": [],
+  "timestamp": "2026-03-17T10:30:00+00:00"
+}
+```
+
+### Response do --analyze
+
+```json
+{
+  "status": "success",
+  "action": "analyze",
+  "agent_path": "./agents/design-agent",
+  "workspace_path": "./agents/design-agent-workspace",
+  "total_failures": 2,
+  "categories": {
+    "ambiguous_instruction": 1,
+    "script_error": 1
+  },
+  "corrections": [
+    {
+      "file": "SKILL.md",
+      "failure_count": 1,
+      "issues": [
+        {
+          "eval_id": 1,
+          "expectation": "Output should follow template",
+          "evidence": "Format was ambiguous, no template provided",
+          "category": "ambiguous_instruction"
+        }
+      ],
+      "suggested_actions": [
+        "Instructions in SKILL.md are too vague. Add specific steps, templates, or examples."
+      ]
+    }
+  ],
   "timestamp": "2026-03-17T10:30:00+00:00"
 }
 ```

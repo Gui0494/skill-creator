@@ -252,33 +252,54 @@ Salve resultados em `<workspace>/iteration-<N>/test-results.json`:
 
 Se algum teste falhou, entre no loop de auto-correção. Máximo de 3 iterações.
 
-### Processo de correção
+### Passo 1: Análise automatizada
 
-1. **Analise as falhas**: Leia os resultados e identifique padrões
+Execute o script de análise para identificar o que quebrou e onde:
+
+```bash
+python3 agent-creator/scripts/auto_correct.py <agent-path> <workspace-path>
+```
+
+O script classifica cada falha (ambiguous_instruction, script_error, output_format, edge_case, trigger_failure, etc.), mapeia para o arquivo afetado, e sugere ações corretivas.
+
+Para output JSON (útil para integração programática):
+```bash
+python3 agent-creator/scripts/auto_correct.py <agent-path> <workspace-path> --json
+```
+
+### Passo 2: Aplicar correções
+
+Com base na análise, corrija os arquivos:
    - Instrução ambígua no SKILL.md? → Reescreva a seção
    - Bug no script? → Corrija o código
    - Expectation impossível? → Ajuste o test case
    - Falta de tratamento de edge case? → Adicione instrução
 
-2. **Aplique correções**: Edite os arquivos necessários
+Edite os arquivos necessários.
 
-3. **Documente**: Adicione ao `context.json`:
-   ```json
-   {
-     "corrections": [
-       {
-         "iteration": 2,
-         "file": "SKILL.md",
-         "issue": "Instrução de formato de saída era ambígua",
-         "fix": "Adicionado template explícito na seção Output"
-       }
-     ]
-   }
-   ```
+### Passo 3: Documentar correções
 
-4. **Re-execute**: Volte à Fase 4 com a nova iteração
+Adicione ao `context.json`:
+```json
+{
+  "corrections": [
+    {
+      "iteration": 2,
+      "file": "SKILL.md",
+      "issue": "Instrução de formato de saída era ambígua",
+      "fix": "Adicionado template explícito na seção Output"
+    }
+  ]
+}
+```
 
-5. **Avalie progresso**: Se os mesmos testes continuam falhando após 3 iterações, peça ajuda ao usuário: "Não consegui corrigir automaticamente o problema X. Pode me ajudar?"
+### Passo 4: Re-executar testes
+
+Volte à Fase 4 com a nova iteração.
+
+### Passo 5: Avaliar progresso
+
+Se os mesmos testes continuam falhando após 3 iterações, peça ajuda ao usuário: "Não consegui corrigir automaticamente o problema X. Pode me ajudar?"
 
 ---
 
@@ -379,6 +400,7 @@ echo '{"action":"create","agent_name":"design-agent","requirements":{"purpose":"
 | create | `--create` | Criação completa (fases 1-6) |
 | validate | `--validate` | Validar estrutura de um agente |
 | test | `--test` | Rodar testes em um agente |
+| analyze | `--analyze` | Analisar falhas e sugerir correções |
 | status | `--status` | Ler progresso de uma criação |
 | report | `--report` | Gerar relatório HTML |
 | preflight | `--preflight` | Verificar ambiente |
@@ -428,8 +450,9 @@ const response = JSON.parse(result.toString());
 
 | Script | Função |
 |--------|--------|
-| `scripts/cli_bridge.py` | Ponte CLI - entry point programático |
+| `scripts/cli_bridge.py` | Ponte CLI - entry point programático (7 actions) |
 | `scripts/validate_agent.py` | Validação estrutural do agente |
 | `scripts/test_agent.py` | Execução de testes com resume |
+| `scripts/auto_correct.py` | Análise de falhas e plano de correção |
 | `scripts/preflight.py` | Verificação do ambiente |
 | `scripts/generate_report.py` | Geração de relatório HTML |
