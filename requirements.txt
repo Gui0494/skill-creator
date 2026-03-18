@@ -1,0 +1,15 @@
+# Agent Creator + Skill Creator
+# Python 3.8+ required
+#
+# No external dependencies required.
+# All scripts use only Python standard library.
+#
+# The following are standard library modules used:
+# - json, os, sys, re, pathlib, subprocess
+# - shutil, platform, uuid, time, argparse
+# - datetime, fnmatch, zipfile, select
+# - concurrent.futures, tempfile, webbrowser
+#
+# External requirements:
+# - Claude CLI (https://docs.anthropic.com/en/docs/claude-cli)
+#   Run: agent-creator/scripts/preflight.py to verify

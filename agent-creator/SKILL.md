@@ -164,6 +164,16 @@ Atualize `context.json` com `"status": "testing", "phase": 3`.
 
 ## Fase 4: Execução e Validação
 
+### Passo 0: Preflight (verificação do ambiente)
+
+Antes de rodar testes, verifique que o ambiente está pronto:
+
+```bash
+python3 agent-creator/scripts/preflight.py
+```
+
+Isso checa: Python 3.8+, Claude CLI instalado, permissões de escrita, espaço em disco. Se algum check falhar, resolva antes de prosseguir.
+
 ### Passo 1: Validação estrutural
 
 Execute o script de validação para verificar a estrutura:
@@ -176,7 +186,15 @@ Se falhar, corrija os problemas antes de prosseguir.
 
 ### Passo 2: Rodar os testes
 
-Para cada test case, lance subagentes em paralelo:
+Para cada test case, lance subagentes em paralelo. Use `--resume` para retomar testes incompletos:
+
+```bash
+python3 agent-creator/scripts/test_agent.py <agent-path> <workspace-path> --iteration N --resume
+```
+
+O script cria arquivos temporários em `.claude/commands/` para que Claude descubra o skill, remove a variável `CLAUDECODE` do env para nesting seguro, e pula evals que já possuem resultado (resume).
+
+Alternativamente, lance subagentes manualmente:
 
 **Com o skill (teste principal):**
 ```
@@ -276,7 +294,13 @@ python3 skill-creator/scripts/quick_validate.py <path-to-agent>
 
 ### Passo 2: Gerar relatório
 
-Apresente ao usuário um resumo:
+Gere o relatório HTML automaticamente e apresente um resumo ao usuário:
+
+```bash
+python3 agent-creator/scripts/generate_report.py <workspace-path> --output report.html
+```
+
+Ou apresente diretamente no chat:
 
 ```
 ## Agente Criado: <nome>
@@ -324,3 +348,88 @@ Se o usuário voltar depois de uma interrupção, leia o `context.json` para ent
 - Explique termos técnicos brevemente quando em dúvida
 - Mostre progresso: "Fase 2 de 6: Gerando o agente..."
 - Peça confirmação em pontos-chave: após requisitos, após test cases, antes da entrega
+
+---
+
+## Invocação via CLI Externo
+
+O agent-creator pode ser chamado programaticamente por CLIs externos (Python, Node.js) através do `scripts/cli_bridge.py`. Isso permite que um CLI detecte a falta de um agente e crie automaticamente.
+
+### Cenário típico
+
+```
+1. Usuário pede: "quero um site com design top"
+2. CLI detecta que não existe skill/agente de design
+3. CLI chama agent-creator via cli_bridge.py
+4. Agent-creator cria o agente de design (fases 1-6)
+5. CLI instala o agente recém-criado
+6. Próximo request usa o agente de design
+```
+
+### Como chamar
+
+```bash
+echo '{"action":"create","agent_name":"design-agent","requirements":{"purpose":"Design profissional","triggers":["design","layout"]}}' | python3 agent-creator/scripts/cli_bridge.py --create
+```
+
+### Actions disponíveis
+
+| Action | Flag | Descrição |
+|--------|------|-----------|
+| create | `--create` | Criação completa (fases 1-6) |
+| validate | `--validate` | Validar estrutura de um agente |
+| test | `--test` | Rodar testes em um agente |
+| status | `--status` | Ler progresso de uma criação |
+| report | `--report` | Gerar relatório HTML |
+| preflight | `--preflight` | Verificar ambiente |
+
+### Protocolo
+
+- **Input**: JSON via stdin
+- **Output**: JSON via stdout
+- **Logs**: stderr (human-readable)
+- **Exit codes**: 0=sucesso, 1=erro, 2=parcial
+
+Consulte `references/cli-protocol.md` para documentação completa com exemplos Python e Node.js.
+
+### Integração Python
+
+```python
+import subprocess, json
+
+result = subprocess.run(
+    ["python3", "agent-creator/scripts/cli_bridge.py", "--create"],
+    input=json.dumps({
+        "agent_name": "design-agent",
+        "requirements": {"purpose": "Criar designs profissionais"},
+        "options": {"output_dir": "./agents", "auto_test": True}
+    }),
+    capture_output=True, text=True
+)
+response = json.loads(result.stdout)
+```
+
+### Integração Node.js
+
+```javascript
+const { execSync } = require('child_process');
+const result = execSync(
+    'python3 agent-creator/scripts/cli_bridge.py --create',
+    { input: JSON.stringify({
+        agent_name: 'design-agent',
+        requirements: { purpose: 'Criar designs profissionais' },
+        options: { output_dir: './agents', auto_test: true }
+    })}
+);
+const response = JSON.parse(result.toString());
+```
+
+## Scripts disponíveis
+
+| Script | Função |
+|--------|--------|
+| `scripts/cli_bridge.py` | Ponte CLI - entry point programático |
+| `scripts/validate_agent.py` | Validação estrutural do agente |
+| `scripts/test_agent.py` | Execução de testes com resume |
+| `scripts/preflight.py` | Verificação do ambiente |
+| `scripts/generate_report.py` | Geração de relatório HTML |
