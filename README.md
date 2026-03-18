@@ -135,6 +135,7 @@ console.log(JSON.parse(result.toString()));
 | `--create` | Full workflow | Creates agent through all 6 phases |
 | `--validate` | Structure check | Validates SKILL.md, frontmatter, files |
 | `--test` | Run tests | Executes evals with resume support |
+| `--analyze` | Failure analysis | Classifies failures, suggests corrections |
 | `--status` | Check progress | Reads context.json from workspace |
 | `--report` | Generate report | Creates HTML report from results |
 | `--preflight` | Environment check | Verifies Python, Claude CLI, disk, perms |

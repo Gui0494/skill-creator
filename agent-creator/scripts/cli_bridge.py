@@ -15,6 +15,7 @@ Actions:
   --create    Full agent creation workflow (phases 1-6)
   --validate  Validate an existing agent structure
   --test      Run tests on an existing agent
+  --analyze   Analyze test failures and suggest corrections
   --status    Read context.json status of an in-progress creation
   --preflight Check environment readiness
   --report    Generate HTML report from workspace
@@ -227,6 +228,41 @@ def action_report(request):
         error_response("Failed to generate report", "REPORT_FAILED")
 
 
+# ─── Action: analyze ────────────────────────────────────────────────
+
+def action_analyze(request):
+    """Analyze test failures and suggest corrections."""
+    from auto_correct import analyze_failures, load_test_results
+
+    agent_path = request.get("agent_path")
+    workspace_path = request.get("workspace_path")
+
+    if not agent_path:
+        error_response("Missing 'agent_path' in request", "MISSING_PARAM")
+    if not workspace_path:
+        error_response("Missing 'workspace_path' in request", "MISSING_PARAM")
+
+    options = request.get("options", {})
+    iteration = options.get("iteration")
+
+    results = load_test_results(workspace_path, iteration)
+    if not results:
+        error_response("No test results found in workspace", "NOT_FOUND")
+
+    plan = analyze_failures(results, agent_path)
+
+    respond({
+        "status": "success",
+        "action": "analyze",
+        "agent_path": str(agent_path),
+        "workspace_path": str(workspace_path),
+        "total_failures": plan["total_failures"],
+        "categories": plan["categories"],
+        "corrections": plan["corrections"],
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    })
+
+
 # ─── Action: create ─────────────────────────────────────────────────
 
 def action_create(request):
@@ -382,6 +418,7 @@ ACTIONS = {
     "create": action_create,
     "validate": action_validate,
     "test": action_test,
+    "analyze": action_analyze,
     "status": action_status,
     "report": action_report,
     "preflight": action_preflight,
@@ -401,6 +438,8 @@ def main():
                               dest='action', help='Validate an agent structure')
     action_group.add_argument('--test', action='store_const', const='test',
                               dest='action', help='Run tests on an agent')
+    action_group.add_argument('--analyze', action='store_const', const='analyze',
+                              dest='action', help='Analyze test failures')
     action_group.add_argument('--status', action='store_const', const='status',
                               dest='action', help='Check creation status')
     action_group.add_argument('--report', action='store_const', const='report',

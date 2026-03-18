@@ -400,6 +400,7 @@ echo '{"action":"create","agent_name":"design-agent","requirements":{"purpose":"
 | create | `--create` | Criação completa (fases 1-6) |
 | validate | `--validate` | Validar estrutura de um agente |
 | test | `--test` | Rodar testes em um agente |
+| analyze | `--analyze` | Analisar falhas e sugerir correções |
 | status | `--status` | Ler progresso de uma criação |
 | report | `--report` | Gerar relatório HTML |
 | preflight | `--preflight` | Verificar ambiente |
@@ -449,7 +450,7 @@ const response = JSON.parse(result.toString());
 
 | Script | Função |
 |--------|--------|
-| `scripts/cli_bridge.py` | Ponte CLI - entry point programático |
+| `scripts/cli_bridge.py` | Ponte CLI - entry point programático (7 actions) |
 | `scripts/validate_agent.py` | Validação estrutural do agente |
 | `scripts/test_agent.py` | Execução de testes com resume |
 | `scripts/auto_correct.py` | Análise de falhas e plano de correção |
