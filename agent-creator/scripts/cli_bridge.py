@@ -38,15 +38,19 @@ Usage from Node.js:
 See references/cli-protocol.md for full protocol documentation.
 """
 
+import argparse
 import json
 import os
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 
-# Resolve paths relative to this script
-SCRIPT_DIR = Path(__file__).parent
+# Ensure sibling scripts are importable regardless of invocation path
+SCRIPT_DIR = Path(__file__).parent.resolve()
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
 AGENT_CREATOR_DIR = SCRIPT_DIR.parent
 
 
@@ -372,10 +376,6 @@ def action_create(request):
         )
 
 
-# Need subprocess for create action
-import subprocess
-
-
 # ─── Main dispatcher ────────────────────────────────────────────────
 
 ACTIONS = {
@@ -389,7 +389,6 @@ ACTIONS = {
 
 
 def main():
-    import argparse
     parser = argparse.ArgumentParser(
         description='Agent Creator CLI Bridge',
         epilog='See references/cli-protocol.md for full documentation.'

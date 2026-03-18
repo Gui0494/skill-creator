@@ -252,15 +252,30 @@ Salve resultados em `<workspace>/iteration-<N>/test-results.json`:
 
 Se algum teste falhou, entre no loop de auto-correção. Máximo de 3 iterações.
 
-### Processo de correção
+### Passo 1: Análise automatizada
 
-1. **Analise as falhas**: Leia os resultados e identifique padrões
+Execute o script de análise para identificar o que quebrou e onde:
+
+```bash
+python3 agent-creator/scripts/auto_correct.py <agent-path> <workspace-path>
+```
+
+O script classifica cada falha (ambiguous_instruction, script_error, output_format, edge_case, trigger_failure, etc.), mapeia para o arquivo afetado, e sugere ações corretivas.
+
+Para output JSON (útil para integração programática):
+```bash
+python3 agent-creator/scripts/auto_correct.py <agent-path> <workspace-path> --json
+```
+
+### Passo 2: Aplicar correções
+
+Com base na análise, corrija os arquivos:
    - Instrução ambígua no SKILL.md? → Reescreva a seção
    - Bug no script? → Corrija o código
    - Expectation impossível? → Ajuste o test case
    - Falta de tratamento de edge case? → Adicione instrução
 
-2. **Aplique correções**: Edite os arquivos necessários
+Edite os arquivos necessários
 
 3. **Documente**: Adicione ao `context.json`:
    ```json
@@ -431,5 +446,6 @@ const response = JSON.parse(result.toString());
 | `scripts/cli_bridge.py` | Ponte CLI - entry point programático |
 | `scripts/validate_agent.py` | Validação estrutural do agente |
 | `scripts/test_agent.py` | Execução de testes com resume |
+| `scripts/auto_correct.py` | Análise de falhas e plano de correção |
 | `scripts/preflight.py` | Verificação do ambiente |
 | `scripts/generate_report.py` | Geração de relatório HTML |
